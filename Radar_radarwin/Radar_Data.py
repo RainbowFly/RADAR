@@ -3,7 +3,7 @@
 gPI = 3.1415926535898
 g1Deg = gPI / 180
 
-gRadarEchoScale = 0.90
+gRadarScale = 0.86#调节雷达图大小
 gEchoLineCountAFrame = 2048
 gShipLegendLen = 12
 gRotate = 350
