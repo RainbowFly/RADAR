@@ -37,6 +37,13 @@ class RadarImage(QWidget):
 
         self.SetCenter(center)
         self.SetRadius(radius)
+        
+        #计时器
+        self.timer = QTimer()
+        self.th = 0.0
+        self.timer.timeout.connect(self.Draw)
+        #self.timer.timeout.connect(self.__DrawESLine)
+        self.timer.start(2000)
 
     #窗体大小变化时，刷新
     def resizeEvent(self,event):
@@ -207,6 +214,39 @@ class RadarImage(QWidget):
             else:
                 p.drawLine(0,-309,0,-306)
             p.restore()
+            
+    #扫描线
+    def __OnTimer(self):
+        if self.th < 6.28:
+            self.th += 0.314
+        else:
+            self.th = 0.0
+        self.mth = self.th
+        update()
+
+    def __DrawESLine(self,p):        
+        for i in range(1000,1024,4):
+            '''gc = 200 * dt/1000
+            xStart = int(self.mCenter.x())
+            yStart = int(self.mCenter.y())
+            xEndL = xStart + 200*math.cos(dt/1000+self.mth)
+            yEndL = yStart + 200*math.sin(dt/1000+self.mth)
+
+            pen = QPen(QColor(0, gc/2, 0),1,Qt.SolidLine)#颜色、线宽、线型
+            p.setPen(pen)
+            p.drawLine(xStart,yStart, xEndL, yEndL)
+            gc+=1'''
+
+            pen = QPen(QColor(0, 255, 0),2)#可能是扫描线
+
+            angle = i / gEchoLineCountAFrame * 2 * gPI - 90 * g1Deg + g1Deg
+            xStart = int(self.mCenter.x())
+            yStart = int(self.mCenter.y())
+            xEndL = int(self.mRadius * math.cos(angle))
+            yEndL = int(self.mRadius * math.sin(angle))
+
+            p.setPen(pen)
+            p.drawLine(xStart,yStart, xEndL, yEndL)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
