@@ -12,6 +12,7 @@ from Radar_Data import g1Deg#导入模块参数
 from Radar_Data import gRadarScale#导入模块参数
 from Radar_Data import gShipLegendLen#导入模块参数
 from Radar_Data import gRangeTable#导入模块参数
+from Radar_Data import gEchoLineCountAFrame#导入模块参数
 from Radar_Data import gRotate
 '''
 圆形窗口
@@ -27,6 +28,7 @@ class RadarImage(QWidget):
         self.setSizePolicy(sizePolicy)
 
         self.mHdt = 0#船首线
+        self.mth = 0.0
 
         center = QPoint(self.width()/2,self.height()/2)
         radius = 0
@@ -41,9 +43,8 @@ class RadarImage(QWidget):
         #计时器
         self.timer = QTimer()
         self.th = 0.0
-        self.timer.timeout.connect(self.Draw)
-        #self.timer.timeout.connect(self.__DrawESLine)
-        self.timer.start(2000)
+        self.timer.timeout.connect(self.update)
+        self.timer.start(2000)#1s刷新一次
 
     #窗体大小变化时，刷新
     def resizeEvent(self,event):
@@ -79,10 +80,24 @@ class RadarImage(QWidget):
 
     # 绘制
     def Draw(self, p): 
-        self.__DrawDisCircleIn(p)#里圈，1
+        self.__DrawDisCircleIn(p)#里圈1
         self.__DrawScaleLine(p)#刻度2
         self.__DrawShipHeadLine(p)#船首线3
         self.__DrawRangeLine(p)#刻度线4
+        self.__DrawSysInfo(p)
+        self.__DrawESLine(p)#扫描线
+
+    # 绘制系统信息
+    def __DrawSysInfo(self, p):
+        pen = QPen(QColor(0, 255, 0))
+        p.setFont(QFont("仿宋",11))
+        p.setPen(pen)
+        #左上
+        p.drawText(-370, -300, "量程: ".decode('utf-8') + "xxx")
+        p.drawText(-370, -320, "船艏: ".decode('utf-8') + str(self.mHdt) + "度".decode('utf-8'))
+        #右上
+        p.drawText(280, -300, "经度: ".decode('utf-8') + str(self.mHdt) + "度".decode('utf-8'))
+        p.drawText(280, -320, "纬度: ".decode('utf-8') + str(self.mHdt) + "度".decode('utf-8'))
 
     #绘制距表圈
     def __DrawDisCircleIn(self, p):
@@ -98,7 +113,7 @@ class RadarImage(QWidget):
         self.__DrawCircle(p, self.mCenter, 0.4 * r)      
         self.__DrawCircle(p, self.mCenter, 0.6 * r)      
         self.__DrawCircle(p, self.mCenter, 0.8 * r)    
-        self.__DrawCircle(p, self.mCenter, 0.01 * r)    #圆心
+        #self.__DrawCircle(p, self.mCenter, 0.01 * r)    #圆心
 
     def __DrawCircle(self, p, center, r):
         x = center.x() - r 
@@ -182,15 +197,14 @@ class RadarImage(QWidget):
         m_minValue = 0        #预绘制刻度最小值
         fm = QFontMetricsF(QFont("Times",24))
         p.save()
-        startRad = (270 - m_startAngle) * (3.14 / 180)
-        deltaRad = (360 - m_startAngle - m_endAngle) * (3.14 / 180) / m_scaleMajor
+        startRad = (270 - m_startAngle) * g1Deg
+        deltaRad = (360 - m_startAngle - m_endAngle) * g1Deg / m_scaleMajor
 
         for i in range(0,m_scaleMajor):
             sina = math.sin(startRad - i * deltaRad)
             cosa = math.cos(startRad - i * deltaRad)
 
             ScaleV = 1.0 * i *((m_maxValue - m_minValue) / m_scaleMajor) + m_minValue
-            print(ScaleV)
             if ScaleV == 0:
                 str = '00'+QString.number(ScaleV)
             elif ScaleV < 100:
@@ -208,45 +222,27 @@ class RadarImage(QWidget):
             p.save()
             p.rotate(i)
             if (i % 10 == 0):
-                p.drawLine(0,-314,0,-306)
+                p.drawLine(0,-313,0,-306)
             elif (i % 5 ==0):
-                p.drawLine(0,-312,0,-306)
+                p.drawLine(0,-311,0,-306)
             else:
-                p.drawLine(0,-309,0,-306)
+                p.drawLine(0,-308,0,-306)
             p.restore()
-            
-    #扫描线
-    def __OnTimer(self):
-        if self.th < 6.28:
-            self.th += 0.314
-        else:
-            self.th = 0.0
-        self.mth = self.th
-        update()
 
-    def __DrawESLine(self,p):        
+    #扫描线
+    def __DrawESLine(self ,p):
+
         for i in range(1000,1024,4):
-            '''gc = 200 * dt/1000
+            gc = 200 * i/1000
             xStart = int(self.mCenter.x())
             yStart = int(self.mCenter.y())
-            xEndL = xStart + 200*math.cos(dt/1000+self.mth)
-            yEndL = yStart + 200*math.sin(dt/1000+self.mth)
+            xEndL = xStart + 200*math.cos(i/1000+self.mth)
+            yEndL = yStart + 200*math.sin(i/1000+self.mth)
 
             pen = QPen(QColor(0, gc/2, 0),1,Qt.SolidLine)#颜色、线宽、线型
             p.setPen(pen)
             p.drawLine(xStart,yStart, xEndL, yEndL)
-            gc+=1'''
-
-            pen = QPen(QColor(0, 255, 0),2)#可能是扫描线
-
-            angle = i / gEchoLineCountAFrame * 2 * gPI - 90 * g1Deg + g1Deg
-            xStart = int(self.mCenter.x())
-            yStart = int(self.mCenter.y())
-            xEndL = int(self.mRadius * math.cos(angle))
-            yEndL = int(self.mRadius * math.sin(angle))
-
-            p.setPen(pen)
-            p.drawLine(xStart,yStart, xEndL, yEndL)
+            gc+=1
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
