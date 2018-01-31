@@ -3,6 +3,8 @@ from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 import sys,os
 import math
+import threading
+import time
 
 #导入其他模块
 gRootDir = os.path.join(os.getcwd(), "..")#得到当前脚本工作目录
@@ -14,6 +16,8 @@ from Radar_Data import gShipLegendLen#导入模块参数
 from Radar_Data import gRangeTable#导入模块参数
 from Radar_Data import gEchoLineCountAFrame#导入模块参数
 from Radar_Data import gRotate
+
+from Radar_Echoline import RadarEcholine
 '''
 圆形窗口
 '''
@@ -27,9 +31,6 @@ class RadarImage(QWidget):
         sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)#微件可以自行放大或缩小
         self.setSizePolicy(sizePolicy)
 
-        self.mHdt = 0#船首线
-        self.mth = 0.0
-
         center = QPoint(self.width()/2,self.height()/2)
         radius = 0
         if self.width() < self.height():
@@ -40,12 +41,24 @@ class RadarImage(QWidget):
         self.SetCenter(center)
         self.SetRadius(radius)
         
-        #计时器
-        self.timer = QTimer()
-        self.th = 0.0
-        self.timer.timeout.connect(self.update)
-        self.timer.start(2000)#1s刷新一次
+        self.mHdt = 0#船首线
+        self.mth = 0.0
+        self.rotationangle = 0#扫描线旋转角
 
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.update)
+        self.timer.start(500)#画面刷新时间
+
+    #************************************************************************
+        '''self.pushButton = QPushButton("test")
+        #self.pushButton.setGeometry(QRect(150, 160, 112, 34))
+        Rgridlayout = QGridLayout()#右侧网格布局
+        Rgridlayout.addWidget(self.pushButton)
+        self.setLayout(Rgridlayout)
+
+        self.pushButton.clicked.connect(self.__DrawESLine)'''
+
+    #************************************************************************
     #窗体大小变化时，刷新
     def resizeEvent(self,event):
         center = QPoint(self.width()/2, self.height()/2)
@@ -80,24 +93,28 @@ class RadarImage(QWidget):
 
     # 绘制
     def Draw(self, p): 
+        self.__DrawESLine(p)#扫描线
         self.__DrawDisCircleIn(p)#里圈1
         self.__DrawScaleLine(p)#刻度2
         self.__DrawShipHeadLine(p)#船首线3
         self.__DrawRangeLine(p)#刻度线4
         self.__DrawSysInfo(p)
-        self.__DrawESLine(p)#扫描线
-
+        self.__UpdateAngle()
+        
     # 绘制系统信息
     def __DrawSysInfo(self, p):
         pen = QPen(QColor(0, 255, 0))
         p.setFont(QFont("仿宋",11))
         p.setPen(pen)
+        time = QTime.currentTime()
+        text = time.toString("hh:mm:ss")
+
         #左上
-        p.drawText(-370, -300, "量程: ".decode('utf-8') + "xxx")
-        p.drawText(-370, -320, "船艏: ".decode('utf-8') + str(self.mHdt) + "度".decode('utf-8'))
+        p.drawText(-370, -300, "时间: ".decode('utf-8') + text)
+        p.drawText(-370, -320, "角度: ".decode('utf-8') + str(self.rotationangle) + "°".decode('utf-8'))
         #右上
-        p.drawText(280, -300, "经度: ".decode('utf-8') + str(self.mHdt) + "度".decode('utf-8'))
-        p.drawText(280, -320, "纬度: ".decode('utf-8') + str(self.mHdt) + "度".decode('utf-8'))
+        p.drawText(280, -300, "经度: ".decode('utf-8') + str(self.mHdt) + "°".decode('utf-8'))
+        p.drawText(280, -320, "纬度: ".decode('utf-8') + str(self.mHdt) + "°".decode('utf-8'))
 
     #绘制距表圈
     def __DrawDisCircleIn(self, p):
@@ -123,7 +140,7 @@ class RadarImage(QWidget):
         height = 2 * r
         p.drawEllipse(x , y, width, height)#校准圆心
 
-    # 绘制船艏线
+    # 绘制0线
     def __DrawShipHeadLine(self, p):
         #绘制船首线
         pen = QPen(QColor(0, 255, 0), 1, Qt.DashLine)#颜色、线宽、线型
@@ -137,7 +154,7 @@ class RadarImage(QWidget):
         yEnd = int(self.mRadius * math.sin(angle) + yStart)
         p.drawLine(xStart, yStart, xEnd, yEnd)
 
-        #船首线三角标
+        #首线三角标
         pen = QPen(QColor(255,0,0))
         p.setPen(pen)
         brush = QBrush(QColor(255, 0, 0), Qt.SolidPattern)
@@ -206,9 +223,9 @@ class RadarImage(QWidget):
 
             ScaleV = 1.0 * i *((m_maxValue - m_minValue) / m_scaleMajor) + m_minValue
             if ScaleV == 0:
-                str = '00'+QString.number(ScaleV)
+                str = '00'+ QString.number(ScaleV)
             elif ScaleV < 100:
-                str = '0'+QString.number(ScaleV)
+                str = '0'+ QString.number(ScaleV)
             else:
                 str = QString.number(ScaleV)
             w = fm.size(Qt.TextSingleLine,str).width()
@@ -229,25 +246,30 @@ class RadarImage(QWidget):
                 p.drawLine(0,-308,0,-306)
             p.restore()
 
+    def __UpdateAngle(self):
+        if self.rotationangle < 360:
+            self.rotationangle += 1
+        else:
+            self.rotationangle = 0
+        self.update()
     #扫描线
-    def __DrawESLine(self ,p):
+    def __DrawESLine(self, p):
+        xStart = int(self.mCenter.x())
+        yStart = int(self.mCenter.y())
 
-        for i in range(1000,1024,4):
-            gc = 200 * i/1000
-            xStart = int(self.mCenter.x())
-            yStart = int(self.mCenter.y())
-            xEndL = xStart + 200*math.cos(i/1000+self.mth)
-            yEndL = yStart + 200*math.sin(i/1000+self.mth)
+        pen = QPen(QColor(0,255,0), 2)#颜色、线宽、线型
+        p.setPen(pen)
+        p.setRenderHint(QPainter.Antialiasing)#反走样，圆滑，但是吃CPU
+        xEnd = int(self.mRadius * math.cos(self.rotationangle*g1Deg) + xStart)
+        yEnd = int(self.mRadius * math.sin(self.rotationangle*g1Deg) + yStart)        
+        p.drawLine(xStart,yStart, xEnd, yEnd)
 
-            pen = QPen(QColor(0, gc/2, 0),1,Qt.SolidLine)#颜色、线宽、线型
-            p.setPen(pen)
-            p.drawLine(xStart,yStart, xEndL, yEndL)
-            gc+=1
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     win = RadarImage()
     win.show()
     sys.exit(app.exec_())
+
 
         
