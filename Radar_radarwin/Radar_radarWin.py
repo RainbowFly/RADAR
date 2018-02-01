@@ -101,7 +101,7 @@ class RadarImage(QWidget):
     # 绘制系统信息
     def __DrawSysInfo(self, p):
         pen = QPen(QColor(0, 255, 0))
-        p.setFont(QFont("仿宋",11))
+        p.setFont(QFont("Times",11))
         p.setPen(pen)
         time = QTime.currentTime()
         text = time.toString("hh:mm:ss")
@@ -255,13 +255,14 @@ class RadarImage(QWidget):
         xStart = int(self.mCenter.x())
         yStart = int(self.mCenter.y())
 
-        pen = QPen(QColor(0,255,0), 2)#颜色、线宽、线型
-        p.setPen(pen)
-        p.setRenderHint(QPainter.Antialiasing)#反走样，圆滑，但是吃CPU
-        xEnd = int(self.mRadius * math.cos(self.rotationangle*g1Deg) + xStart)
-        yEnd = int(self.mRadius * math.sin(self.rotationangle*g1Deg) + yStart)        
-        p.drawLine(xStart,yStart, xEnd, yEnd)
-
+        angle = [i/1000.0 for i in range(0,252,4)]#扫描线余辉效果
+        for dt in angle:
+            pen = QPen(QColor(0,1000*dt,0), 2)#颜色、线宽、线型
+            p.setPen(pen)
+            p.setRenderHint(QPainter.Antialiasing)#反走样，圆滑，但是吃CPU
+            xEnd = int(self.mRadius * math.cos(self.rotationangle*g1Deg+dt) + xStart)
+            yEnd = int(self.mRadius * math.sin(self.rotationangle*g1Deg+dt) + yStart)        
+            p.drawLine(xStart,yStart, xEnd, yEnd)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
