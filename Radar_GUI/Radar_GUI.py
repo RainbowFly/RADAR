@@ -49,4 +49,4 @@ if __name__ == '__main__':
     win = RadarWidget()
     win.show()
     sys.exit(app.exec_())
-
+    
