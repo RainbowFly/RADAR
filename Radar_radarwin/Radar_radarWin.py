@@ -16,8 +16,6 @@ from Radar_Data import gShipLegendLen#导入模块参数
 from Radar_Data import gRangeTable#导入模块参数
 from Radar_Data import gEchoLineCountAFrame#导入模块参数
 from Radar_Data import gRotate
-
-from Radar_Echoline import RadarEcholine
 '''
 圆形窗口
 '''
@@ -41,7 +39,7 @@ class RadarImage(QWidget):
         self.SetCenter(center)
         self.SetRadius(radius)
         
-        self.mHdt = 0#船首线
+        self.mHdt = 0#0线
         self.mth = 0.0
         self.rotationangle = 0#扫描线旋转角
 
@@ -57,7 +55,6 @@ class RadarImage(QWidget):
         self.setLayout(Rgridlayout)
 
         self.pushButton.clicked.connect(self.__DrawESLine)'''
-
     #************************************************************************
     #窗体大小变化时，刷新
     def resizeEvent(self,event):
@@ -118,19 +115,17 @@ class RadarImage(QWidget):
 
     #绘制距表圈
     def __DrawDisCircleIn(self, p):
-        pen = QPen(QColor(0, 255, 0),1.5,Qt.SolidLine)#颜色、线宽、线型
+        pen = QPen(QColor(0, 255, 0), 0.5 ,Qt.DashLine)#颜色、线宽、线型
         p.setPen(pen)
         p.setBrush(Qt.NoBrush)
         p.setRenderHint(QPainter.Antialiasing)#反走样，圆滑
 
         r = self.mRadius
-        self.__DrawCircle(p, self.mCenter, r)         #最外圈n
         #self.__DrawCircle(p, self.mCenter, r*1.02)     #刻度圈
         self.__DrawCircle(p, self.mCenter, 0.2 * r)         
         self.__DrawCircle(p, self.mCenter, 0.4 * r)      
         self.__DrawCircle(p, self.mCenter, 0.6 * r)      
-        self.__DrawCircle(p, self.mCenter, 0.8 * r)    
-        #self.__DrawCircle(p, self.mCenter, 0.01 * r)    #圆心
+        self.__DrawCircle(p, self.mCenter, 0.8 * r)
 
     def __DrawCircle(self, p, center, r):
         x = center.x() - r 
@@ -143,7 +138,7 @@ class RadarImage(QWidget):
     # 绘制0线
     def __DrawShipHeadLine(self, p):
         #绘制船首线
-        pen = QPen(QColor(0, 255, 0), 1, Qt.DashLine)#颜色、线宽、线型
+        pen = QPen(QColor(0, 255, 0), 0.5 , Qt.SolidLine)#颜色、线宽、线型
         p.setPen(pen)
         p.setRenderHint(QPainter.Antialiasing)#反走样，圆滑
 
@@ -180,7 +175,7 @@ class RadarImage(QWidget):
 
     #绘制45°、135°、180°、225°、270°、315°、360°刻度线
     def __DrawScaleLine(self, p):
-        pen = QPen(QColor(0,255,0), 1, Qt.DashLine)#颜色、线宽、线型
+        pen = QPen(QColor(0,255,0), 0.5 , Qt.SolidLine)#颜色、线宽、线型
         p.setPen(pen)
         p.setRenderHint(QPainter.Antialiasing)#反走样，圆滑
 
@@ -198,8 +193,11 @@ class RadarImage(QWidget):
         pen = QPen(QColor(0, 255, 0),1.5,Qt.SolidLine)#颜色、线宽、线型
         p.setPen(pen)
         p.setBrush(Qt.NoBrush)
-        p.setFont(QFont("仿宋",11))#字体,QFont.Bold
+        p.setFont(QFont("Times",11))#字体,QFont.Bold
         p.setRenderHint(QPainter.Antialiasing)#反走样，圆滑
+
+        r = self.mRadius
+        self.__DrawCircle(p, self.mCenter, r)         #最外圈n
 
         side=min(self.width(),self.height())
         p.setViewport((self.width()-side)/2,(self.height()-side)/2, side, side)
@@ -232,7 +230,7 @@ class RadarImage(QWidget):
             h = fm.size(Qt.TextSingleLine,str).height()
             x = 332 * cosa - w / 2
             y = -326 * sina + h / 4
-            p.drawText(x+12, y-4, str)#函数的前两个参数是显示的坐标位置，后一个是显示的内容，是字符类型""
+            p.drawText(x+14, y-4, str)#函数的前两个参数是显示的坐标位置，后一个是显示的内容，是字符类型""
         p.restore()
 
         for i in range(0,360):
