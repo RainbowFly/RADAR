@@ -45,7 +45,7 @@ class RadarImage(QWidget):
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.update)
-        self.timer.start(500)#画面刷新时间
+        self.timer.start(1000)#画面刷新时间
 
     #************************************************************************
         '''self.pushButton = QPushButton("test")
@@ -108,10 +108,10 @@ class RadarImage(QWidget):
 
         #左上
         p.drawText(-370, -300, "时间: ".decode('utf-8') + text)
-        p.drawText(-370, -320, "角度: ".decode('utf-8') + str(self.rotationangle) + "°".decode('utf-8'))
+        p.drawText(-370, -320, "角度: ".decode('utf-8') + str(self.rotationangle) + " °".decode('utf-8'))
         #右上
-        p.drawText(280, -300, "经度: ".decode('utf-8') + str(self.mHdt) + "°".decode('utf-8'))
-        p.drawText(280, -320, "纬度: ".decode('utf-8') + str(self.mHdt) + "°".decode('utf-8'))
+        p.drawText(280, -300, "经度: ".decode('utf-8') + str(self.mHdt) + " °".decode('utf-8'))
+        p.drawText(280, -320, "纬度: ".decode('utf-8') + str(self.mHdt) + " °".decode('utf-8'))
 
     #绘制距表圈
     def __DrawDisCircleIn(self, p):
@@ -151,7 +151,7 @@ class RadarImage(QWidget):
 
         #首线三角标
         pen = QPen(QColor(255,0,0))
-        p.setPen(pen)
+        p.setPen(pen)   
         brush = QBrush(QColor(255, 0, 0), Qt.SolidPattern)
         p.setBrush(brush);
 
@@ -246,7 +246,7 @@ class RadarImage(QWidget):
 
     def __UpdateAngle(self):
         if self.rotationangle < 360:
-            self.rotationangle += 1
+            self.rotationangle += 4#调节扫描速度
         else:
             self.rotationangle = 0
         self.update()
@@ -255,14 +255,14 @@ class RadarImage(QWidget):
         xStart = int(self.mCenter.x())
         yStart = int(self.mCenter.y())
 
-        angle = [i/1000.0 for i in range(0,252,4)]#扫描线余辉效果
+        angle = [i/1000.0 for i in range(0,360,4)]#扫描线余辉效果
         for dt in angle:
-            pen = QPen(QColor(0,1000*dt,0), 2)#颜色、线宽、线型
+            pen = QPen(QColor(0,600*dt,0), 2)#颜色、线宽、线型
             p.setPen(pen)
             p.setRenderHint(QPainter.Antialiasing)#反走样，圆滑，但是吃CPU
             xEnd = int(self.mRadius * math.cos(self.rotationangle*g1Deg+dt) + xStart)
             yEnd = int(self.mRadius * math.sin(self.rotationangle*g1Deg+dt) + yStart)        
-            p.drawLine(xStart,yStart, xEnd, yEnd)
+            p.drawLine(xStart,yStart,xEnd,yEnd)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
